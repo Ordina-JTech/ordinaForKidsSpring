@@ -10,6 +10,7 @@ import javax.validation.Valid;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.trace.http.HttpTrace.Principal;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
@@ -33,6 +34,9 @@ public class CalendarEventController {
 
 	private ModelMapper modelMapper = new ModelMapper();
 
+	@Value("${ofk.events.maxperday}")
+	private long maxEventsPerDay;
+	
 	/**
 	 * Returns the CalendarEvent as example with a specified owner id, this will
 	 * filter the events to only show the owner
@@ -45,6 +49,10 @@ public class CalendarEventController {
 
 	private ExampleMatcher getExampleMatcher() {
 		return ExampleMatcher.matchingAny().withMatcher("owner", ExampleMatcher.GenericPropertyMatchers.exact());
+	}
+	
+	private ExampleMatcher getExampleMatcherDate() {
+		return ExampleMatcher.matchingAny().withMatcher("date", ExampleMatcher.GenericPropertyMatchers.exact());
 	}
 
 	@GetMapping("/calendar_events/{username}")
@@ -73,8 +81,25 @@ public class CalendarEventController {
 		// parse DTO to entity
 		
 		CalendarEvent calendarEvent = modelMapper.map(calendarEventDTO, CalendarEvent.class);
+				
+		// check if the max number of events is exceeded based on application.properties => ofk.events.maxperday
+		List<CalendarEvent> calendarEvents = calendarEventRepository.findAll(Example.of(calendarEvent, getExampleMatcherDate()));
+		
+		if(calendarEvents.size() >= maxEventsPerDay) {
+			throw new ResponseStatusException(
+			          HttpStatus.CONFLICT, "Maximum number of events per day '" + maxEventsPerDay + "' has already been reached");
+		}
+		
 		calendarEvent.setOwner(request.getUserPrincipal().getName());
-
+		
+		for(CalendarEvent existingEvent : calendarEvents) {
+			if(existingEvent.getOwner().equals(calendarEvent.getOwner())) {
+				throw new ResponseStatusException(
+				          HttpStatus.CONFLICT, "Can only book 1 event per day per user");
+			}
+		}
+		
+		
 		calendarEvent = calendarEventRepository.save(calendarEvent);
 		return modelMapper.map(calendarEvent, CalendarEventDTO.class);
 	}
