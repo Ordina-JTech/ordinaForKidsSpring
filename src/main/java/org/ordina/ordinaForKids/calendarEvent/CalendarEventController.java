@@ -11,13 +11,9 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.actuate.trace.http.HttpTrace.Principal;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,45 +23,40 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
+/**
+ * Basic RestController for CalendarEvent
+ * @author Tim Misset
+ *
+ */
 public class CalendarEventController {
 
 	@Autowired
-	CalendarEventRepository calendarEventRepository;
+	private CalendarEventRepository calendarEventRepository;
 
 	private ModelMapper modelMapper = new ModelMapper();
 
 	@Value("${ofk.events.maxperday}")
 	private long maxEventsPerDay;
-	
+
 	/**
-	 * Returns the CalendarEvent as example with a specified owner id, this will
-	 * filter the events to only show the owner
-	 * 
+	 * Returns the calendar events for a specific username
+	 * @param request
 	 * @return
 	 */
-	private Example<CalendarEvent> getExample(String username) {
-		return Example.of(new CalendarEvent(username), getExampleMatcher());
-	}
-
-	private ExampleMatcher getExampleMatcher() {
-		return ExampleMatcher.matchingAny().withMatcher("owner", ExampleMatcher.GenericPropertyMatchers.exact());
-	}
-	
-	private ExampleMatcher getExampleMatcherDate() {
-		return ExampleMatcher.matchingAny().withMatcher("date", ExampleMatcher.GenericPropertyMatchers.exact());
-	}
-
 	@GetMapping("/calendar_events/{username}")
 	public List<CalendarEventDTO> getAllUserEvents(HttpServletRequest request) {
 		
 		Type listType = new TypeToken<List<CalendarEventDTO>>() {
 		}.getType();
-		List<CalendarEventDTO> calendarEventDTOs = modelMapper.map(calendarEventRepository.findAll(
-				// use the default example with a match for owner of the event
-				getExample(request.getUserPrincipal().getName())), listType);
+		List<CalendarEventDTO> calendarEventDTOs = modelMapper.map(calendarEventRepository.findAllByOwner(request.getUserPrincipal().getName()), listType);
 		return calendarEventDTOs;
 	}
 	
+	/**
+	 * Returns the calendar events
+	 * @param request
+	 * @return
+	 */
 	@GetMapping("/calendar_events")
 	public List<CalendarEventDTO> getAllEvents(HttpServletRequest request)
 	{
@@ -75,6 +66,12 @@ public class CalendarEventController {
 		return calendarEventDTOs;
 	}
 
+	/**
+	 * Creates new calendar event
+	 * @param request
+	 * @param calendarEventDTO
+	 * @return
+	 */
 	@PostMapping("/calendar_events")
 	public CalendarEventDTO createEvent(HttpServletRequest request,
 			@Valid @RequestBody CalendarEventDTO calendarEventDTO) {
@@ -83,7 +80,7 @@ public class CalendarEventController {
 		CalendarEvent calendarEvent = modelMapper.map(calendarEventDTO, CalendarEvent.class);
 				
 		// check if the max number of events is exceeded based on application.properties => ofk.events.maxperday
-		List<CalendarEvent> calendarEvents = calendarEventRepository.findAll(Example.of(calendarEvent, getExampleMatcherDate()));
+		List<CalendarEvent> calendarEvents = calendarEventRepository.findAllByDate(calendarEvent.getDate());
 		
 		if(calendarEvents.size() >= maxEventsPerDay) {
 			throw new ResponseStatusException(

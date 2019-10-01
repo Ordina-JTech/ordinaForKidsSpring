@@ -15,6 +15,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Entity
 @Table(name = "calendarEvent")
 @EntityListeners(AuditingEntityListener.class)
+/**
+ * CalendarEvent Entity, used to store requests made by schools
+ * @author Tim Misset
+*/
 public class CalendarEvent {
 	@Id
     @GeneratedValue(strategy = GenerationType.AUTO)

@@ -2,6 +2,12 @@ package org.ordina.ordinaForKids.calendarEvent;
 
 import java.util.Date;
 
+/**
+ * Data Transfer Object for CalendarEvent
+ * Use DTO to prevent unwanted modifications using the persisted entity (CalendarEvent)
+ * @author Tim Misset
+ *
+ */
 public class CalendarEventDTO {
 	private long id;
 	private Date date;
