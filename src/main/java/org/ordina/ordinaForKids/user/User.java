@@ -12,10 +12,7 @@ import javax.persistence.Table;
 public class User {
 	
 	@Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private long id;
-	
-	@Column(name = "email", nullable = false)
+    @Column(name = "email", nullable = false)
 	private String email;
 	
 	@Column(name = "password", nullable = false)
@@ -28,7 +25,7 @@ public class User {
 	private String lastname;
 	
 	@Column(name = "userrole", nullable = false)
-	private UserRole userRole;
+	private UserRole userrole;
 	/**
 	 * @return the email
 	 */
@@ -80,14 +77,14 @@ public class User {
 	/**
 	 * @return the userRole
 	 */
-	public UserRole getUserRole() {
-		return userRole;
+	public UserRole getUserrole() {
+		return userrole;
 	}
 	/**
 	 * @param userRole the userRole to set
 	 */
-	public void setUserRole(UserRole userRole) {
-		this.userRole = userRole;
+	public void setUserrole(UserRole userrole) {
+		this.userrole = userrole;
 	}
 	
 	

@@ -9,7 +9,7 @@ public class UserDTO {
 	private String password;
 	private String firstname;
 	private String lastname;
-	private UserRole userRole;
+	private String userrole;
 	/**
 	 * @return the email
 	 */
@@ -61,14 +61,14 @@ public class UserDTO {
 	/**
 	 * @return the userRole
 	 */
-	public UserRole getUserRole() {
-		return userRole;
+	public String getUserrole() {
+		return userrole;
 	}
 	/**
 	 * @param userRole the userRole to set
 	 */
-	public void setUserRole(UserRole userRole) {
-		this.userRole = userRole;
+	public void setUserrole(String userrole) {
+		this.userrole = userrole;
 	}
 	
 	
