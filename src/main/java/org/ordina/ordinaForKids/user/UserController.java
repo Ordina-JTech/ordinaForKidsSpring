@@ -1,6 +1,7 @@
 package org.ordina.ordinaForKids.user;
 
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.ExampleMatcher.GenericPropertyMatcher;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,48 +27,28 @@ import org.springframework.web.server.ResponseStatusException;
 public class UserController {
 
 	@Autowired
-	UserRepository userRepository;
+	UserService userService;
 
-	private ModelMapper modelMapper = new ModelMapper();
 	
 	/**
 	 * Simple authentication, using Basic authentication to create a session token
 	 */
 	@GetMapping("/login")
-	public UserSessionToken login(HttpServletRequest request, HttpServletResponse response)
+	public ResponseEntity<Object> login(HttpServletRequest request, HttpServletResponse response)
 	{
-		
-		UserSessionToken userSessionToken = new UserSessionToken();
-		userSessionToken.setUsername(request.getUserPrincipal().getName());
-		userSessionToken.setSessionToken("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-		
-		System.out.println("returing token");
-		return userSessionToken;
-		
+		Optional<User> user = userService.getUser(request.getUserPrincipal().getName());
+		if(user.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot find user with email: " + request.getUserPrincipal().getName());
+		}
+		return new ResponseEntity<Object>(user.get(), HttpStatus.OK);
 	}
 	
 	@PostMapping("/user") 
-	public String createUser(HttpServletRequest request, @Valid @RequestBody UserDTO userDTO)
+	public ResponseEntity<Object> createUser(HttpServletRequest request, @Valid @RequestBody User user)
 	{
-		
-		User user = modelMapper.map(userDTO, User.class);
-		user.setUserrole(UserRole.valueOf(userDTO.getUserrole()));
-		
-		Boolean userExists = userRepository.exists(
-				Example.of(user, 
-						ExampleMatcher.matchingAny().withMatcher("email", ExampleMatcher.GenericPropertyMatchers.exact())));
-		if(userExists) {
-			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "User with email '" + user.getEmail() + "' already exists");
-		}
-				
-		try {
-			userRepository.save(user);
-		}
-		catch(DataIntegrityViolationException exception) {
-			
-			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, exception.getCause().getCause().getMessage());
-		}
-		return "Saved successfully";
+		userService.createUser(user);
+		user.setPassword(null);
+		return new ResponseEntity<Object>(user, HttpStatus.OK);
 		
 	}
 	

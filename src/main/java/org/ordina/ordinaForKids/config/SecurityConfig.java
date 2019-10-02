@@ -1,5 +1,8 @@
 package org.ordina.ordinaForKids.config;
 
+import javax.sql.DataSource;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,19 +18,18 @@ import org.springframework.security.web.session.SessionManagementFilter;
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
+	@Autowired
+	  DataSource dataSource;
+	
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 		
-		
-		
-		auth.inMemoryAuthentication()
-        .withUser("admin").password(encoder().encode("adminPass")).roles("ADMIN", "USER")
-        .and()
-        .withUser("schooluser1").password(encoder().encode("school")).roles("USER")
-		.and()
-        .withUser("schooluser2").password(encoder().encode("school")).roles("USER")
-		.and()
-        .withUser("schooluser3").password(encoder().encode("school")).roles("USER");
+		auth.jdbcAuthentication()
+			.dataSource(dataSource)
+			.passwordEncoder(encoder())
+			.usersByUsernameQuery("SELECT email as username, password, TRUE FROM user WHERE email = ?")
+			.authoritiesByUsernameQuery("SELECT email as username, userrole as role FROM user WHERE email = ?" )
+			.and().inMemoryAuthentication().withUser("admin").password(encoder().encode("admin")).roles("Administrator");
 	}
 	
 	@Override
@@ -38,14 +40,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	    .csrf().disable()
 	    .formLogin().disable()
 	    .authorizeRequests()
-        .antMatchers(HttpMethod.GET, "/**").hasRole("USER")
-        .antMatchers(HttpMethod.POST, "/user/**").hasRole("ADMIN")
+        .antMatchers(HttpMethod.GET, "/calendar_event/**").permitAll()
+        .antMatchers(HttpMethod.GET, "/login/**").permitAll()
+        .antMatchers(HttpMethod.POST, "/user/**").hasRole("Administrator")
         ;
 	    
 	}
 	
 	@Bean
-	public PasswordEncoder  encoder() {
+	public BCryptPasswordEncoder  encoder() {
 	    return new BCryptPasswordEncoder();
 	}
 	

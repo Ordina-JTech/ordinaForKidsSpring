@@ -7,6 +7,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.hibernate.validator.constraints.Length;
+
 @Entity
 @Table(name = "user")
 public class User {
@@ -15,7 +17,9 @@ public class User {
     @Column(name = "email", nullable = false)
 	private String email;
 	
+	
 	@Column(name = "password", nullable = false)
+	@Length(min = 5, message = "Your password must have at least 5 characters")
 	private String password;
 	
 	@Column(name = "firstname", nullable = false)
@@ -25,7 +29,7 @@ public class User {
 	private String lastname;
 	
 	@Column(name = "userrole", nullable = false)
-	private UserRole userrole;
+	private String userrole;
 	/**
 	 * @return the email
 	 */
@@ -78,13 +82,15 @@ public class User {
 	 * @return the userRole
 	 */
 	public UserRole getUserrole() {
-		return userrole;
+		return UserRole.valueOf(
+				this.userrole.startsWith("ROLE_") ? this.userrole.substring(5) : this.userrole
+				);
 	}
 	/**
 	 * @param userRole the userRole to set
 	 */
 	public void setUserrole(UserRole userrole) {
-		this.userrole = userrole;
+		this.userrole = "ROLE_" + userrole.toString();
 	}
 	
 	
