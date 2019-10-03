@@ -43,6 +43,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .antMatchers(HttpMethod.GET, "/calendar_event/**").permitAll()
         .antMatchers(HttpMethod.GET, "/login/**").permitAll()
         .antMatchers(HttpMethod.POST, "/user/**").hasRole("Administrator")
+        .antMatchers(HttpMethod.PUT, "/user/**").hasRole("Administrator")
+        .antMatchers(HttpMethod.GET, "/user/**").hasRole("Administrator")
         ;
 	    
 	}

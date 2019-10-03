@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -62,7 +63,7 @@ public class CalendarEventController {
 	{
 		Type listType = new TypeToken<List<CalendarEventDTO>>() {
 		}.getType();
-		List<CalendarEventDTO> calendarEventDTOs = modelMapper.map(calendarEventRepository.findAll(), listType);
+		List<CalendarEventDTO> calendarEventDTOs = modelMapper.map(calendarEventRepository.findAll(Sort.by("date").ascending()), listType);
 		return calendarEventDTOs;
 	}
 

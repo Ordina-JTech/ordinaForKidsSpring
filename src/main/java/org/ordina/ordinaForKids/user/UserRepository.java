@@ -8,4 +8,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 	public Optional<User> findOneByEmail(String email);
 	
+	public void deleteByEmail(String email);
+	
 }
