@@ -1,9 +1,11 @@
 package org.ordina.ordinaForKids;
 
+
 import org.junit.Test;
 import org.ordina.ordinaForKids.calendarEvent.CalendarEvent;
 import org.ordina.ordinaForKids.calendarEvent.CalendarEventDTO;
 import org.ordina.ordinaForKids.school.School;
+import org.ordina.ordinaForKids.user.User;
 
 import com.openpojo.reflection.impl.PojoClassFactory;
 import com.openpojo.validation.Validator;
@@ -34,5 +36,10 @@ public class AccessorTests {
 	@Test
 	public void testSchool() {
 		validateAccessors(School.class);
+	}
+	
+	@Test
+	public void testUser() {
+		validateAccessors(User.class);
 	}
 }
