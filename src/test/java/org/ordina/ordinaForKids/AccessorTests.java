@@ -4,7 +4,6 @@ package org.ordina.ordinaForKids;
 import org.junit.Test;
 import org.ordina.ordinaForKids.calendarEvent.CalendarEvent;
 import org.ordina.ordinaForKids.calendarEvent.CalendarEventDTO;
-import org.ordina.ordinaForKids.school.School;
 import org.ordina.ordinaForKids.user.User;
 
 import com.openpojo.reflection.impl.PojoClassFactory;
