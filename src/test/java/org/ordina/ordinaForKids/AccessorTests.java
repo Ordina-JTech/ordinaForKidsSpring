@@ -34,11 +34,6 @@ public class AccessorTests {
 	}
 	
 	@Test
-	public void testSchool() {
-		validateAccessors(School.class);
-	}
-	
-	@Test
 	public void testUser() {
 		validateAccessors(User.class);
 	}
