@@ -59,10 +59,8 @@ public class UserController {
 		try {
 			userService.createUser(user);
 		} catch (SQLIntegrityConstraintViolationException sqlIntegrityConstraintViolationException) {
-			// TODO Auto-generated catch block
 			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "One or more fields contains incorrect data: " + sqlIntegrityConstraintViolationException.getMessage());
 		} catch (UserAlreadyExistsException userAlreadyExistsException) {
-			// TODO Auto-generated catch block
 			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, userAlreadyExistsException.getMessage());
 		}
 		user.setPassword(null);

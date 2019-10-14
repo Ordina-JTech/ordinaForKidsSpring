@@ -9,6 +9,10 @@ import javax.validation.Valid;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
+import org.ordina.ordinaForKids.validation.CalendarEventAccessViolationException;
+import org.ordina.ordinaForKids.validation.CalendarEventNotFoundException;
+import org.ordina.ordinaForKids.validation.MaximumNumberOfEventsPerDayPerOwnerReachedException;
+import org.ordina.ordinaForKids.validation.MaximumNumberOfEventsPerDayReachedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Example;
@@ -32,26 +36,9 @@ import org.springframework.web.server.ResponseStatusException;
 public class CalendarEventController {
 
 	@Autowired
-	private CalendarEventRepository calendarEventRepository;
-
+	private CalendarEventService calendarEventService;
+	
 	private ModelMapper modelMapper = new ModelMapper();
-
-	@Value("${ofk.events.maxperday}")
-	private long maxEventsPerDay;
-
-	/**
-	 * Returns the calendar events for a specific username
-	 * @param request
-	 * @return
-	 */
-	@GetMapping("/calendar_events/{username}")
-	public List<CalendarEventDTO> getAllUserEvents(HttpServletRequest request) {
-		
-		Type listType = new TypeToken<List<CalendarEventDTO>>() {
-		}.getType();
-		List<CalendarEventDTO> calendarEventDTOs = modelMapper.map(calendarEventRepository.findAllByOwner(request.getUserPrincipal().getName()), listType);
-		return calendarEventDTOs;
-	}
 	
 	/**
 	 * Returns the calendar events
@@ -63,7 +50,7 @@ public class CalendarEventController {
 	{
 		Type listType = new TypeToken<List<CalendarEventDTO>>() {
 		}.getType();
-		List<CalendarEventDTO> calendarEventDTOs = modelMapper.map(calendarEventRepository.findAll(Sort.by("date").ascending()), listType);
+		List<CalendarEventDTO> calendarEventDTOs = modelMapper.map(calendarEventService.getCalendarEvents(), listType);
 		return calendarEventDTOs;
 	}
 
@@ -79,45 +66,38 @@ public class CalendarEventController {
 		// parse DTO to entity
 		
 		CalendarEvent calendarEvent = modelMapper.map(calendarEventDTO, CalendarEvent.class);
-				
-		// check if the max number of events is exceeded based on application.properties => ofk.events.maxperday
-		List<CalendarEvent> calendarEvents = calendarEventRepository.findAllByDate(calendarEvent.getDate());
-		
-		if(calendarEvents.size() >= maxEventsPerDay) {
-			throw new ResponseStatusException(
-			          HttpStatus.CONFLICT, "Maximum number of events per day '" + maxEventsPerDay + "' has already been reached");
-		}
-		
 		calendarEvent.setOwner(request.getUserPrincipal().getName());
+		try {
+			calendarEventService.createCalendarEvent(calendarEvent);
+		} catch (MaximumNumberOfEventsPerDayReachedException maximumNumberOfEventsPerDayReachedException) {
+			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, maximumNumberOfEventsPerDayReachedException.getMessage());
+		} catch (MaximumNumberOfEventsPerDayPerOwnerReachedException maximumNumberOfEventsPerDayPerOwnerReachedException) {
+			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, maximumNumberOfEventsPerDayPerOwnerReachedException.getMessage());
+		}		
 		
-		for(CalendarEvent existingEvent : calendarEvents) {
-			if(existingEvent.getOwner().equals(calendarEvent.getOwner())) {
-				throw new ResponseStatusException(
-				          HttpStatus.CONFLICT, "Can only book 1 event per day per user");
-			}
-		}
-		
-		
-		calendarEvent = calendarEventRepository.save(calendarEvent);
-		return modelMapper.map(calendarEvent, CalendarEventDTO.class);
+		return calendarEventDTO;
 	}
 	
 	@DeleteMapping("/calendar_events/{id}")
 	public void deleteEvent(HttpServletRequest request, @PathVariable Long id)
 	{
 		
-		Optional<CalendarEvent> calendarEvent = calendarEventRepository.findById(id);
-		if(calendarEvent.isEmpty()) {
-			throw new ResponseStatusException(
-			          HttpStatus.NOT_FOUND, "Event not found");
-		}
+		Optional<CalendarEvent> calendarEvent = calendarEventService.getCalendarEvent(id);
+		
+		// Only event owner can remove event is something which is linked to the processing of the Rest call
+		// and not necessarily a low-level limiting that should be placed on the service.
 		if(!calendarEvent.get().getOwner().equals(request.getUserPrincipal().getName())) {
 			
 			throw new ResponseStatusException(
 			          HttpStatus.FORBIDDEN, "Only event owner can remove event");
 		}
+			
 		
-		calendarEventRepository.delete(calendarEvent.get());
-
+		try {
+			calendarEventService.deleteCalendarEvent(id);
+		} catch (CalendarEventNotFoundException calendarEventNotFoundException) {
+			throw new ResponseStatusException(
+			          HttpStatus.FORBIDDEN, calendarEventNotFoundException.getMessage());
+		}
 	}
 }

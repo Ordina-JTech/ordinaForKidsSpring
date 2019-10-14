@@ -11,4 +11,7 @@ public interface CalendarEventRepository extends JpaRepository<CalendarEvent, Lo
 	
 	public List<CalendarEvent> findAllByDate(Date date);
 	
+	public List<CalendarEvent> findAllByDateAndOwner(Date date, String owner);
+	
+	public void deleteByOwner(String owner);
 }

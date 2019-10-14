@@ -69,6 +69,8 @@ public class UserControllerTests {
 			}
 		}
 	}
+	
+	
 
 	private void removeDemoUser() {
 		userService.deleteUser(demoUser.getEmail());
