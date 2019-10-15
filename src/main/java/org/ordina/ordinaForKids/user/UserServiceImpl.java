@@ -10,9 +10,11 @@ import org.modelmapper.ModelMapper;
 import org.ordina.ordinaForKids.calendarEvent.CalendarEventRepository;
 import org.ordina.ordinaForKids.validation.ExceptionDigger;
 import org.ordina.ordinaForKids.validation.UserAlreadyExistsException;
+import org.ordina.ordinaForKids.validation.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionSystemException;
@@ -40,7 +42,7 @@ public class UserServiceImpl implements UserService {
 		// TODO Auto-generated method stub
 
 		if (!userRepository.findOneByEmail(user.getEmail()).isEmpty()) {
-			throw new UserAlreadyExistsException("User with email '" + user.getEmail() + "' already exists");
+			throw new UserAlreadyExistsException(user.getEmail());
 		}
 		user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
 
@@ -63,12 +65,12 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	@Transactional
-	public Optional<User> updateUser(String email, User user) {
+	public Optional<User> updateUser(String email, User user) throws UserNotFoundException {
 		// TODO Auto-generated method stub
 
 		Optional<User> existingUser = userRepository.findOneByEmail(email);
 		if (existingUser.isEmpty()) {
-			return existingUser;
+			throw new UserNotFoundException(email);
 		} else {
 			if (user.getPassword() == null || user.getPassword().isEmpty()) {
 				user.setPassword(existingUser.get().getPassword());
@@ -85,7 +87,10 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	@Transactional
-	public void deleteUser(String email) {
+	public void deleteUser(String email) throws UserNotFoundException {
+		if(userRepository.findOneByEmail(email).isEmpty()) {
+			throw new UsernameNotFoundException(email);
+		}
 		calendarEventRepository.findAllByOwner(email).stream()
 				.forEach(calendarEvent -> calendarEventRepository.delete(calendarEvent));
 		userRepository.deleteByEmail(email);
@@ -108,9 +113,10 @@ public class UserServiceImpl implements UserService {
 
 	/**
 	 * Returns the user
+	 * @throws UserNotFoundException 
 	 */
 	@Override
-	public Optional<User> getUser(String email) {
+	public Optional<User> getUser(String email) throws UserNotFoundException {
 		// TODO Auto-generated method stub
 		Optional<User> user = userRepository.findOneByEmail(email);
 		if (user.isPresent()) {
@@ -121,6 +127,9 @@ public class UserServiceImpl implements UserService {
 				_user.setEmail("admin");
 				_user.setUserrole(UserRole.Administrator);
 				return Optional.of(_user);
+			}
+			else {
+				throw new UserNotFoundException(email);
 			}
 		}
 		return user;

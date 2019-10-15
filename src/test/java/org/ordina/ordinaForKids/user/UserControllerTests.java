@@ -1,13 +1,17 @@
 package org.ordina.ordinaForKids.user;
 
 import static org.junit.Assert.assertEquals;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.junit.After;
 import org.junit.Before;
@@ -15,9 +19,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+import org.ordina.ordinaForKids.calendarEvent.CalendarEvent;
+import org.ordina.ordinaForKids.validation.MaximumNumberOfEventsPerDayPerOwnerReachedException;
+import org.ordina.ordinaForKids.validation.MaximumNumberOfEventsPerDayReachedException;
 import org.ordina.ordinaForKids.validation.UserAlreadyExistsException;
+import org.ordina.ordinaForKids.validation.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -34,6 +46,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class UserControllerTests {
@@ -45,204 +60,299 @@ public class UserControllerTests {
 	@Autowired
 	WebApplicationContext webApplicationContext;
 
-	@Autowired
+	@MockBean
 	UserService userService;
 
-	private User demoUser = new User();
-
-	private void resetDemoUserValues() {
-		demoUser.setEmail("demo@user.com");
-		demoUser.setFirstname("firstname");
-		demoUser.setLastname("lastname");
-		demoUser.setPassword("SomePassword1234!");
-		demoUser.setUserrole(UserRole.School);
-	}
-
-	private void setDemoUser() {
-		// check if the demo user exists and add if it not:
-		if (userService.getUser(demoUser.getEmail()).isEmpty()) {
-			try {
-				userService.createUser(demoUser);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				System.out.println(e);
-			}
-		}
-	}
-	
-	
-
-	private void removeDemoUser() {
-		userService.deleteUser(demoUser.getEmail());
-	}
-
 	@Before()
-	public void setUp() {
-		resetDemoUserValues();
-		setDemoUser();
+	public void setUp() throws SQLIntegrityConstraintViolationException, UserAlreadyExistsException, UserNotFoundException {
+		// set the mock users
+		setMockUsers();
+
+		// set the mock Mvc
 		mvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(springSecurity()).build();
-	}
 
-	@After()
-	public void tearDown() {
-		removeDemoUser();
-	}
-
-	private String mapToJson(Object obj) throws JsonProcessingException {
-		ObjectMapper objectMapper = new ObjectMapper();
-		return objectMapper.writeValueAsString(obj);
-	}
-
-	private <T> T mapFromJson(String json, Class<T> clazz)
-			throws JsonParseException, JsonMappingException, IOException {
-
-		ObjectMapper objectMapper = new ObjectMapper();
-		return objectMapper.readValue(json, clazz);
+		// then assign the stubs for the mock service
+		setStubForGetUsers();
+		setStubForGetUser();
+		setStubForCreateUser();
+		setStubForUpdateUser();
+		setStubForDeleteUser();
 	}
 
 	// test login
 	@Test
 	@WithMockUser(username = "demo@user.com", roles = "Administrator")
-	public void testLoginShouldPass() throws Exception {
+	public void testLoginWithAcceptableCredentialsShouldPass() throws Exception {
+		// arrange
+
+		// act
 		MvcResult mvcResult = testGet("/login");
+
+		// assert
 		assertEquals(200, mvcResult.getResponse().getStatus());
 	}
 
-	// test login should fail
-	// controller will throw a 422 - unprocessable entity when trying to login with
-	// unknown username
 	@Test
 	@WithMockUser(username = "wrong@user.name", roles = "Administrator")
-	public void testLoginShouldFail() throws Exception {
+	public void testLoginWithBadCredentialsShouldThrow403() throws Exception {
+		// arrange
+
+		// act
 		MvcResult mvcResult = testGet("/login");
-		assertEquals(422, mvcResult.getResponse().getStatus());
-	}
 
-	// test a user that has a valid Administrator account
-	@Test
-	@WithMockUser(roles = "Administrator")
-	public void testGetUserShouldPass() throws Exception {
-		MvcResult mvcResult = testGet("/user");
-		assertEquals(200, mvcResult.getResponse().getStatus());
-	}
-
-	// test a user that has a valid Schooluser account, and thus should be able to
-	// access the /user endpoint:
-	@Test()
-	@WithMockUser(roles = "Schooluser")
-	public void testGetUserShouldFail() throws Exception {
-		MvcResult mvcResult = testGet("/user");
+		// assert
 		assertEquals(403, mvcResult.getResponse().getStatus());
 	}
 
-	/**
-	 * Test the create user flow from the controller
-	 * 
-	 * @throws Exception
-	 */
-	@Test()
+	@Test
 	@WithMockUser(roles = "Administrator")
-	public void testCreateUserShouldPass() throws Exception {
-		removeDemoUser();
-		MvcResult mvcResult = testPost("/user", demoUser);
-
-		// check if the response is correct
-		assertEquals(200, mvcResult.getResponse().getStatus());
-
-		// check if it returns the user as a JSONable Object:
-		User user = mapFromJson(mvcResult.getResponse().getContentAsString(), User.class);
-		assertEquals(user.getEmail(), demoUser.getEmail());
-		assertEquals(user.getFirstname(), demoUser.getFirstname());
-		assertEquals(user.getLastname(), demoUser.getLastname());
-		assertEquals(user.getUserrole(), demoUser.getUserrole());
-		assertNull(user.getPassword());
-
-		// check if the user has been added
-		assertTrue(userService.getUser(demoUser.getEmail()).isPresent());
-
-		// clean up the user
-		userService.deleteUser(demoUser.getEmail());
-		assertTrue(userService.getUser(demoUser.getEmail()).isEmpty());
-	}
-
-	/**
-	 * Test the create user flow from the controller with a few scenarios that
-	 * should fail
-	 * 
-	 * @throws Exception
-	 */
-	@Test()
-	@WithMockUser(roles = "Administrator")
-	public void testCreateUserShouldFail() throws Exception {
-
-		// try adding the demoUser again, this should fail
-		MvcResult mvcResult = testPost("/user", demoUser);
-		assertEquals(422, mvcResult.getResponse().getStatus());
-		assertEquals("User with email '" + demoUser.getEmail() + "' already exists",
-				mvcResult.getResponse().getErrorMessage());
-		removeDemoUser(); // cleanup
-		assertTrue(userService.getUser(demoUser.getEmail()).isEmpty()); // check cleanup
-
-		// try adding the user with incorrect fields:
-		resetDemoUserValues();
-		demoUser.setEmail("bad@email");
-		mvcResult = testPost("/user", demoUser);
-		assertEquals(400, mvcResult.getResponse().getStatus());
-
-		resetDemoUserValues();
-		demoUser.setPassword("");
-		mvcResult = testPost("/user", demoUser);
-		assertEquals(400, mvcResult.getResponse().getStatus());
-
-		resetDemoUserValues();
-		demoUser.setFirstname("A");
-		mvcResult = testPost("/user", demoUser);
-		assertEquals(400, mvcResult.getResponse().getStatus());
-	}
-
-	/**
-	 * Validate the update method for the user
-	 * No fail tests are added, field constrains are already validated by the create test
-	 * @throws Exception
-	 */
-	@Test()
-	@WithMockUser(roles = "Administrator")
-	public void testSetUser() throws Exception {
-		final String NEWFIRSTNAME = "New first name";
-		demoUser.setFirstname(NEWFIRSTNAME);
-		MvcResult mvcResult = testPut("/user", demoUser);
-
-		// check if the response is correct
-		assertEquals(200, mvcResult.getResponse().getStatus());
-
-		// check if the user is returned
-		User user = mapFromJson(mvcResult.getResponse().getContentAsString(), User.class);
-		assertEquals(user.getFirstname(), NEWFIRSTNAME);
-
-		// check if persisted in the database:
-		Optional<User> updatedUser = userService.getUser(demoUser.getEmail());
-		assertTrue(updatedUser.isPresent());
-		assertEquals(updatedUser.get().getFirstname(), NEWFIRSTNAME);
-	}
-
-	/**
-	 * Validate the delete method for the user
-	 * @throws Exception
-	 */
-	@Test()
-	@WithMockUser(roles = "Administrator")
-	public void testDeleteUser() throws Exception {
+	public void testGetUserShouldPass() throws Exception {
+		// arrange
 		
-		MvcResult mvcResult = testDelete("/user/" + demoUser.getEmail());
-
-		// check if the response is correct
+		// act
+		MvcResult mvcResult = testGet("/user");
+		
+		// assert
 		assertEquals(200, mvcResult.getResponse().getStatus());
+		assertEquals(mockUsersSize, mapFromJson(mvcResult.getResponse().getContentAsString(), User[].class).length);
+	}
 
-		// check if the user is removed
-		Optional<User> updatedUser = userService.getUser(demoUser.getEmail());
-		assertTrue(updatedUser.isEmpty());
+	@Test()
+	@WithMockUser(roles = "Schooluser")
+	public void testGetUsersWithIncorrectAuthenticationAuthorityShouldThrow403() throws Exception {
+		// arrange
+		
+		// act
+		MvcResult mvcResult = testGet("/user");
+		
+		// assert
+		assertEquals(403, mvcResult.getResponse().getStatus());
 	}
 	
+	@Test()
+	@WithMockUser(roles = "Administrator")
+	public void testCreateUserAsAdministratorShouldPass() throws Exception {
+		// arrange
+		User newUser = new User();
+		newUser.setEmail("new@user.com");
+		newUser.setFirstname("firstname");
+		newUser.setLastname("lastname");
+		newUser.setPassword("somepassword123");
+		newUser.setUserrole(UserRole.School);
+				
+		// act
+		MvcResult mvcResult = testPost("/user", newUser);
+		User createdUser = mapFromJson(mvcResult.getResponse().getContentAsString(), User.class);
+
+		// assert
+		assertEquals(200, mvcResult.getResponse().getStatus());
+		assertEquals(newUser.getEmail(), createdUser.getEmail());
+		assertEquals(mockUsersSize + 1, mockUsers.size());
+	}
+	
+	@Test()
+	@WithMockUser(roles = "Administrator")
+	public void testCreateUserWithDuplicateEmailShouldThrow422() throws Exception {
+		// arrange
+		User newUser = new User();
+		newUser.setEmail("demo@user.com");
+		newUser.setFirstname("firstname");
+		newUser.setLastname("lastname");
+		newUser.setPassword("somepassword123");
+		newUser.setUserrole(UserRole.School);
+				
+		// act
+		MvcResult mvcResult = testPost("/user", newUser);
+
+		// assert
+		assertEquals(422, mvcResult.getResponse().getStatus());
+		assertEquals(mockUsersSize, mockUsers.size());
+	}
+	
+	@Test()
+	@WithMockUser(roles = "Administrator")
+	public void testSetUserAsAdministratorWithWrongEmailShouldThrow404() throws Exception {
+		// arrange
+		User existingUser = new User();
+		existingUser.setEmail("wrong@email.com");
+		existingUser.setFirstname("new firstname");
+		existingUser.setLastname("lastname");
+		existingUser.setUserrole(UserRole.School);
+				
+		// act
+		MvcResult mvcResult = testPut("/user", existingUser);
+		
+		// assert
+		assertEquals(404, mvcResult.getResponse().getStatus());
+		assertEquals(mockUsersSize, mockUsers.size());
+	}
+	
+	@Test()
+	@WithMockUser(roles = "Administrator")
+	public void testSetUserAsAdministratorShouldPass() throws Exception {
+		// arrange
+		User existingUser = mockUsers.get(0);
+		existingUser.setFirstname("new firstname");
+				
+		// act
+		MvcResult mvcResult = testPut("/user", existingUser);
+		User modifiedUser = mapFromJson(mvcResult.getResponse().getContentAsString(), User.class);
+
+		// assert
+		assertEquals(200, mvcResult.getResponse().getStatus());
+		assertEquals(existingUser.getEmail(), modifiedUser.getEmail());
+		assertEquals(existingUser.getFirstname(), modifiedUser.getFirstname());
+		assertEquals(mockUsersSize, mockUsers.size());
+	}
+	
+	@Test()
+	@WithMockUser(roles = "Administrator")
+	public void testDeleteUserAsAdministratorShouldPass() throws Exception {
+		// arrange
+		User existingUser = mockUsers.get(0);
+			
+		// act
+		MvcResult mvcResult = testDelete("/user/" + existingUser.getEmail());
+		
+		// assert
+		assertEquals(200, mvcResult.getResponse().getStatus());
+		assertEquals(mockUsersSize - 1, mockUsers.size());
+	}
+
+	@Test()
+	@WithMockUser(roles = "Administrator")
+	public void testDeleteUserAsAdministratorWithWrongEmailShouldThrow404() throws Exception {
+		// arrange
+		String email = "wrong@email.com";
+			
+		// act
+		MvcResult mvcResult = testDelete("/user/" + email);
+		
+		// assert
+		assertEquals(404, mvcResult.getResponse().getStatus());
+		assertEquals(mockUsersSize, mockUsers.size());
+	}
+	
+	// /////////////////////////////////////////////////////////////////////////////////////////////
+	// STUBS
+	// /////////////////////////////////////////////////////////////////////////////////////////////
+	
+
+	private void setStubForGetUsers() {
+		when(userService.getUsers()).thenReturn(mockUsers);
+	}
+
+	private void setStubForGetUser() throws UserNotFoundException {
+		when(userService.getUser(any(String.class))).thenAnswer(new Answer<Optional<User>>() {
+
+			@Override
+			public Optional<User> answer(InvocationOnMock invocation) throws Throwable {
+				String email = invocation.getArgument(0);
+				
+				Optional<User> user = mockUsers.stream().filter(mockUser -> mockUser.getEmail().equals(email)).findFirst();
+				
+				if(user.isEmpty()) { 
+					throw new UserNotFoundException(email);
+				}
+				return user;
+			}
+
+		});
+	}
+	
+	private void setStubForCreateUser() throws SQLIntegrityConstraintViolationException, UserAlreadyExistsException  {
+		doAnswer(new Answer<Void>() {
+
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				User user = invocation.getArgument(0);
+				
+				if(mockUsers.stream().filter(mockUser -> mockUser.getEmail().equals(user.getEmail())).count() > 0) {
+					throw new UserAlreadyExistsException("User with email '" + user.getEmail() + "' already exists");
+				}
+				
+				// TODO: add some constraint validation logic 
+				
+				// passed all, add to mockRepository:
+				mockUsers.add(user);
+				
+				return null;
+			}
+
+		}).when(userService).createUser(any(User.class));
+	}
+	
+	private void setStubForUpdateUser() throws UserNotFoundException   {
+		doAnswer(new Answer<Optional<User>>() {
+
+			@Override
+			public Optional<User> answer(InvocationOnMock invocation) throws Throwable {
+				
+				String email = invocation.getArgument(0);
+				
+				User user = invocation.getArgument(1);
+				
+				Optional<User> optionalExistingUser = mockUsers.stream().filter(mockUser -> mockUser.getEmail().equals(email)).findFirst();
+				if(optionalExistingUser.isEmpty()) {
+					throw new UserNotFoundException("Could not find user with " + email);
+				}
+				User existingUser = optionalExistingUser.get();
+				existingUser.setFirstname(user.getFirstname());
+				existingUser.setLastname(user.getLastname());
+				existingUser.setUserrole(user.getUserrole());
+				
+				return optionalExistingUser;
+			}
+
+		}).when(userService).updateUser(any(String.class), any(User.class));
+	}
+	
+	private void setStubForDeleteUser() throws UserNotFoundException   {
+		doAnswer(new Answer<Void>() {
+
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				
+				String email = invocation.getArgument(0);
+				Optional<User> optionalExistingUser = mockUsers.stream().filter(mockUser -> mockUser.getEmail().equals(email)).findFirst();
+				
+				if(optionalExistingUser.isEmpty()) {
+					throw new UserNotFoundException("Could not find user with " + email);
+				}
+				
+				mockUsers.remove(optionalExistingUser.get());
+				return null;
+			}
+
+		}).when(userService).deleteUser((any(String.class)));
+	}
+
+	// /////////////////////////////////////////////////////////////////////////////////////////////
+	// HELPER METHODS
+	// /////////////////////////////////////////////////////////////////////////////////////////////
+
+	// HELPERS FOR MOCK DATA
+	private List<User> mockUsers;
+	private int mockUsersSize = 5;
+
+	private void setMockUsers() {
+		mockUsers = new ArrayList<User>();
+
+		for (int i = 0; i < mockUsersSize; i++) {
+			User user = new User();
+			user.setEmail("demo" + (i == 0 ? "" : i) + "@user.com"); // <-- most tests will use demo@user.com, reads
+																		// better than demo0@user.com.
+			user.setFirstname("firstname " + i);
+			user.setLastname("lastname " + i);
+			user.setPassword("somepassword1234" + i); // <-- the password ..
+			user.setUserrole(UserRole.School); // <-- .. and the role are not part of the tests since they are handled
+												// by the MVC security context
+			mockUsers.add(user);
+		}
+
+	}
+
+	// HELPERS FOR MOCK MVC <--> CONTROLLER INTERACTION
 	private MvcResult testGet(String uri) throws Exception {
 		return mvc.perform(MockMvcRequestBuilders
 
@@ -262,5 +372,17 @@ public class UserControllerTests {
 	private MvcResult testDelete(String uri) throws Exception {
 		return mvc.perform(MockMvcRequestBuilders.delete(uri).contentType(MediaType.APPLICATION_JSON_VALUE)
 				.accept(MediaType.APPLICATION_JSON_VALUE)).andReturn();
+	}
+
+	private String mapToJson(Object obj) throws JsonProcessingException {
+		ObjectMapper objectMapper = new ObjectMapper();
+		return objectMapper.writeValueAsString(obj);
+	}
+
+	private <T> T mapFromJson(String json, Class<T> clazz)
+			throws JsonParseException, JsonMappingException, IOException {
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		return objectMapper.readValue(json, clazz);
 	}
 }

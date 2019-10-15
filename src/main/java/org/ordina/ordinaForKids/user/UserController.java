@@ -11,6 +11,7 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.modelmapper.ModelMapper;
 import org.ordina.ordinaForKids.calendarEvent.CalendarEventDTO;
 import org.ordina.ordinaForKids.validation.UserAlreadyExistsException;
+import org.ordina.ordinaForKids.validation.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Example;
@@ -35,16 +36,18 @@ public class UserController {
 
 	
 	/**
-	 * Simple authentication, using Basic authentication to create a session token
+	 * Simple authentication, using Basic authentication
 	 */
 	@GetMapping("/login")
 	public ResponseEntity<Object> login(HttpServletRequest request, HttpServletResponse response)
 	{
-		Optional<User> user = userService.getUser(request.getUserPrincipal().getName());
-		if(user.isEmpty()) {
-			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot find user with email: " + request.getUserPrincipal().getName());
+		Optional<User> user;
+		try {
+			user = userService.getUser(request.getUserPrincipal().getName());
+			return new ResponseEntity<Object>(user.get(), HttpStatus.OK);
+		} catch (UserNotFoundException e) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, e.getMessage());
 		}
-		return new ResponseEntity<Object>(user.get(), HttpStatus.OK);
 	}
 	
 	@GetMapping("/user")
@@ -71,9 +74,11 @@ public class UserController {
 	@PutMapping("/user")
 	public ResponseEntity<Object> setUser(@Valid @RequestBody User user)
 	{
-		Optional<User> updatedUser = userService.updateUser(user.getEmail(), user);
-		if(updatedUser.isEmpty()) {
-			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot find user with email: " + user.getEmail());
+		Optional<User> updatedUser;
+		try {
+			updatedUser = userService.updateUser(user.getEmail(), user);
+		} catch (UserNotFoundException e) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
 		}
 		return new ResponseEntity<Object>(updatedUser.get(), HttpStatus.OK);
 	}
@@ -81,7 +86,11 @@ public class UserController {
 	@DeleteMapping("/user/{email}")
 	public ResponseEntity<Object> deleteUser(@PathVariable String email)
 	{
-		userService.deleteUser(email);
+		try {
+			userService.deleteUser(email);
+		} catch (UserNotFoundException e) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND,  e.getMessage());
+		}
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 }
