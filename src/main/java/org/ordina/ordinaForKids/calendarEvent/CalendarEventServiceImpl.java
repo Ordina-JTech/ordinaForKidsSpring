@@ -56,7 +56,7 @@ public class CalendarEventServiceImpl implements CalendarEventService {
 	@Override
 	@Transactional
 	public void deleteCalendarEvent(Long id) throws CalendarEventNotFoundException {
-
+		
 		Optional<CalendarEvent> calendarEvent = calendarEventRepository.findById(id);
 		if (calendarEvent.isEmpty()) {
 			throw new CalendarEventNotFoundException("Event not found");

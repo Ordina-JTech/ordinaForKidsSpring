@@ -7,18 +7,31 @@ import static org.junit.Assert.fail;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.ordina.ordinaForKids.validation.CalendarEventNotFoundException;
 import org.ordina.ordinaForKids.validation.MaximumNumberOfEventsPerDayPerOwnerReachedException;
+import org.ordina.ordinaForKids.validation.MaximumNumberOfEventsPerDayReachedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -33,6 +46,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static org.mockito.Mockito.*;
+
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class CalendarEventControllerTests {
@@ -44,105 +59,208 @@ public class CalendarEventControllerTests {
 	@Autowired
 	WebApplicationContext webApplicationContext;
 
-	@Autowired
+	@MockBean
 	CalendarEventService calendarEventService;
-	
+
 	@Value("${ofk.events.max-per-day}")
 	private long maxEventsPerDay; // max events per day for the calendar
+
+	@Value("${ofk.events.max-per-day-per-owner}")
+	private long maxEventsPerDayPerOwner;
 	
+	private int mockCalendarEventSize = 10;
+
+	private List<CalendarEvent> mockCalendarEvents;
 
 	@Before()
-	public void setUp() {
-		resetDemoEventValues();
-		setDemoEvent();
+	public void setUp() throws CalendarEventNotFoundException, MaximumNumberOfEventsPerDayReachedException,
+			MaximumNumberOfEventsPerDayPerOwnerReachedException {
+		// set the mock events
+		setMockCalendarEvents();
+
+		// and mock Mvc
 		mvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(springSecurity()).build();
+
+		// then assign the stubs
+		// return all mock events for getCalendarEvents()
+		when(calendarEventService.getCalendarEvents()).thenReturn(mockCalendarEvents);
+
+		// return single Optional<CalendarEvent> for getCalendarEvent(Long)
+		when(calendarEventService.getCalendarEvent(any(Long.class))).thenAnswer(new Answer<Optional<CalendarEvent>>() {
+
+			@Override
+			public Optional<CalendarEvent> answer(InvocationOnMock invocation) throws Throwable {
+				Long id = invocation.getArgument(0);
+				Optional<CalendarEvent> calendarEvent = Optional.of(mockCalendarEvents.get(id.intValue()));
+				return calendarEvent;
+			}
+
+		});
+
+		// delete single event from the Repository for deleteCalendarEvent(Long)
+		doAnswer(new Answer<Void>() {
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				Long calendarEventId = invocation.getArgument(0);
+				mockCalendarEvents.remove(calendarEventId.intValue());
+				return null;
+			}
+		}).when(calendarEventService).deleteCalendarEvent(any(Long.class));
+
+		// create new single event to the Repository for
+		// createCalendarEvent(CalendarEvent)
+		doAnswer(new Answer<Void>() {
+
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				CalendarEvent calendarEvent = invocation.getArgument(0);
+				// check for limits of eventsPerDay and eventPerDayPerUser
+				
+				List<CalendarEvent> matchingEventsByDate = mockCalendarEvents.stream().filter(
+						mockCalendarEvent -> mockCalendarEvent.getDate().compareTo(calendarEvent.getDate()) == 0)
+						.collect(Collectors.toList());
+				
+				if (matchingEventsByDate.size() >= maxEventsPerDay) {
+					throw new MaximumNumberOfEventsPerDayReachedException(
+							"Maximum number of events per day '" + maxEventsPerDay + "' has already been reached");
+				}
+				
+				List<CalendarEvent> matchingEventsByDateAndOwner = matchingEventsByDate.stream()
+						.filter(mockCalendarEvent -> mockCalendarEvent.getOwner().equals(calendarEvent.getOwner()))
+						.collect(Collectors.toList());
+
+				
+				if (matchingEventsByDateAndOwner.size() >= maxEventsPerDayPerOwner) {
+					throw new MaximumNumberOfEventsPerDayPerOwnerReachedException(
+							"Can only book " + maxEventsPerDayPerOwner + " per day per owner");
+				}
+				
+				// passed all, add to mockRepository:
+				mockCalendarEvents.add(calendarEvent);
+				
+				return null;
+			}
+
+		}).when(calendarEventService).createCalendarEvent(any(CalendarEvent.class));
+
 	}
 
-	@After()
-	public void tearDown() {
-		removeDemoEvent();
-	}
-	
-	private CalendarEvent demoEvent = new CalendarEvent();
-	
-	private void resetDemoEventValues() {
-
-		demoEvent.setDate(getCalendarForDay(2019, 10, 30).getTime());
-		demoEvent.setOwner("demo@user.com");
-		
-	}
 	private Calendar getCalendarForDay(int year, int month, int day) {
 		Calendar calendar = Calendar.getInstance();
 		calendar.set(year, month, day, 0, 0, 0);
 		calendar.set(Calendar.MILLISECOND, 0);
-		
+
 		return calendar;
 	}
-	
-	
-	private void setDemoEvent() {
-		// check if the demo user exists and add if it not:
-		if (calendarEventService.getCalendarEvent(demoEvent.getId()).isEmpty()) {
-			try {
-				calendarEventService.createCalendarEvent(demoEvent);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				System.out.println(e);
-			}
+
+	// mock calendar events to be used for general testing
+	private void setMockCalendarEvents() {
+		mockCalendarEvents = new ArrayList<CalendarEvent>();
+		for (int i = 0; i < mockCalendarEventSize; i++) {
+			CalendarEvent calendarEvent = new CalendarEvent();
+			calendarEvent.setDate(getCalendarForDay(2019, 10, i + 1).getTime());
+			calendarEvent.setOwner("demo@user.com");
+			calendarEvent.setId(mockCalendarEvents.size());
+			mockCalendarEvents.add(calendarEvent);
 		}
 	}
+	
+	// additional calendar events to be used for exception handling:
+	// create maximum number of events per day to trigger the exception associated with it
+	private void inflateToMaxEventsPerDay(int year, int month, int day) {
+		List<CalendarEvent> calendarEvents = new ArrayList<CalendarEvent>();
+		for (int i = 0; i < maxEventsPerDay; i++) {
+			CalendarEvent calendarEvent = new CalendarEvent();
+			calendarEvent.setDate(getCalendarForDay(year, month, day).getTime());
+			calendarEvent.setOwner("demo" + i + "@user.com");
+			calendarEvent.setId(mockCalendarEvents.size());
+			mockCalendarEvents.add(calendarEvent);
+		}
+		return;
+	}
 
-	private void removeDemoEvent() {
-		calendarEventService.deleteCalendarEventsByOwner(demoEvent.getOwner());
-		cleanUpAdditionalDemoEvents();
-	}
-	
 	@Test
-	@WithMockUser(username="demo@user.com", roles="School")
+	@WithMockUser(username = "demo@user.com", roles = "School")
 	public void testGetEvents() throws Exception {
+		// arrange
+		
+		// act
 		MvcResult mvcResult = testGet("/calendar_events");
+		
+		// assert
 		assertEquals(200, mvcResult.getResponse().getStatus());
-		assertTrue(mapFromJson(mvcResult.getResponse().getContentAsString(), CalendarEvent[].class).length > 0);
+		assertTrue(mapFromJson(mvcResult.getResponse().getContentAsString(), CalendarEvent[].class).length == 10);
 	}
-	
+
+	@Test
+	@WithMockUser(username = "demo@user.com", roles = "School")
+	public void testDeleteEvent() throws Exception {
+		// arrange
+		
+		// act
+		MvcResult mvcResult = testDelete("/calendar_events/" + mockCalendarEvents.get(0).getId());
+		
+		// assert
+		assertEquals(mockCalendarEventSize - 1, mockCalendarEvents.size());
+
+	}
+
 	@Test
 	@WithMockUser(username="demo@user.com", roles="School")
 	public void testCreateEventShouldThrowMaximumEventsPerUserPerDayException() throws Exception {
-		MvcResult mvcResult = testPost("/calendar_events", demoEvent);
+		// > arrange
+		CalendarEvent newCalendarEvent = new CalendarEvent();
+		newCalendarEvent.setDate(getCalendarForDay(2019, 10, 1).getTime()); // <- mock repository already has event on this day for this user
+		newCalendarEvent.setOwner("demo@user.com");
+		
+		// > act
+		MvcResult mvcResult = testPost("/calendar_events", newCalendarEvent);
+		
+		// > assert
 		assertEquals(422, mvcResult.getResponse().getStatus());
-		assertTrue(mvcResult.getResponse().getErrorMessage().contains("Can only book 1 per day per owner"));
+		assertTrue(mvcResult.getResponse().getErrorMessage().contains("Can only book " + maxEventsPerDayPerOwner + " per day per owner"));
+				
 	}
 	
 	@Test
-	@WithMockUser(username="demo@user.com", roles="School")
+	@WithMockUser(username="second@user.com", roles="School")
 	public void testCreateEventShouldThrowMaximumEventsPerDayException() throws Exception {
-		CalendarEvent calendarEvent = null;
-		for(int i = 0; i < maxEventsPerDay; i++) {
-			// add max number of allowed events per day
-			calendarEvent = new CalendarEvent();
-			calendarEvent.setOwner("demo" + i + "@user.com");
-			calendarEvent.setDate(getCalendarForDay(2019, 11, 1).getTime());
-			calendarEventService.createCalendarEvent(calendarEvent);
-		}
+		// > arrange
+		// add calendar events to match the maximum number of events per day:
+		inflateToMaxEventsPerDay(2019, 12, 1); 
 		
-		// then try to add one more which should throw the exception
-		calendarEvent.setOwner("demo" + maxEventsPerDay + "@user.com");
+		// create a new event for the same date with a unique user:
+		CalendarEvent newCalendarEvent = new CalendarEvent();
+		newCalendarEvent.setDate(getCalendarForDay(2019, 12, 1).getTime());
+		newCalendarEvent.setOwner("second@user.com");
 		
-		// wrap in try statement so the cleanup will still be done
-		MvcResult mvcResult = testPost("/calendar_events", calendarEvent);
+		// > act
+		MvcResult mvcResult = testPost("/calendar_events", newCalendarEvent);
+		
+		
+		// > assert
 		assertEquals(422, mvcResult.getResponse().getStatus());
 		assertTrue(mvcResult.getResponse().getErrorMessage().contains("Maximum number of events per day '" + maxEventsPerDay + "' has"));
 		
 	}
 	
-	private void cleanUpAdditionalDemoEvents() {
-		//cleanup additional demo events that have been created by the testCreateEventShouldThrowMaximumEventsPerDayException
-		for(int i = 0; i < maxEventsPerDay; i++) {
-			calendarEventService.deleteCalendarEventsByOwner("demo" + i + "@user.com");
-		}
+	@Test
+	@WithMockUser(username="demo@user.com", roles="School")
+	public void testCreateEventShouldPass() throws Exception {
+		// > arrange
+		CalendarEvent newCalendarEvent = new CalendarEvent();
+		newCalendarEvent.setDate(getCalendarForDay(2020, 1, 1).getTime()); 
+		newCalendarEvent.setOwner("demo@user.com");
+		
+		// > act
+		MvcResult mvcResult = testPost("/calendar_events", newCalendarEvent);
+		
+		// > assert
+		assertEquals(200, mvcResult.getResponse().getStatus());
+		assertEquals(mockCalendarEventSize + 1, mockCalendarEvents.size());
+				
 	}
-	
-	
+
 	private MvcResult testGet(String uri) throws Exception {
 		return mvc.perform(MockMvcRequestBuilders
 
@@ -154,12 +272,11 @@ public class CalendarEventControllerTests {
 				.content(mapToJson(postObject)).accept(MediaType.APPLICATION_JSON_VALUE)).andReturn();
 	}
 
-
 	private MvcResult testDelete(String uri) throws Exception {
 		return mvc.perform(MockMvcRequestBuilders.delete(uri).contentType(MediaType.APPLICATION_JSON_VALUE)
 				.accept(MediaType.APPLICATION_JSON_VALUE)).andReturn();
 	}
-	
+
 	private String mapToJson(Object obj) throws JsonProcessingException {
 		ObjectMapper objectMapper = new ObjectMapper();
 		return objectMapper.writeValueAsString(obj);

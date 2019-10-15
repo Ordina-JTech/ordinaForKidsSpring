@@ -67,6 +67,7 @@ public class CalendarEventController {
 		
 		CalendarEvent calendarEvent = modelMapper.map(calendarEventDTO, CalendarEvent.class);
 		calendarEvent.setOwner(request.getUserPrincipal().getName());
+		
 		try {
 			calendarEventService.createCalendarEvent(calendarEvent);
 		} catch (MaximumNumberOfEventsPerDayReachedException maximumNumberOfEventsPerDayReachedException) {
@@ -81,7 +82,6 @@ public class CalendarEventController {
 	@DeleteMapping("/calendar_events/{id}")
 	public void deleteEvent(HttpServletRequest request, @PathVariable Long id)
 	{
-		
 		Optional<CalendarEvent> calendarEvent = calendarEventService.getCalendarEvent(id);
 		
 		// Only event owner can remove event is something which is linked to the processing of the Rest call
@@ -91,7 +91,6 @@ public class CalendarEventController {
 			throw new ResponseStatusException(
 			          HttpStatus.FORBIDDEN, "Only event owner can remove event");
 		}
-			
 		
 		try {
 			calendarEventService.deleteCalendarEvent(id);
