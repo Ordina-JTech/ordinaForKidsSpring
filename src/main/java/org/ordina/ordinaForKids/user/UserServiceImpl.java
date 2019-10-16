@@ -39,11 +39,13 @@ public class UserServiceImpl implements UserService {
 	@Transactional()
 	public void createUser(User user)
 			throws UserAlreadyExistsException, SQLIntegrityConstraintViolationException {
-		// TODO Auto-generated method stub
 
+		// validate that the user is new
 		if (!userRepository.findOneByEmail(user.getEmail()).isEmpty()) {
 			throw new UserAlreadyExistsException(user.getEmail());
 		}
+		
+		// encrypt the password for database storage
 		user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
 
 		try {
@@ -66,22 +68,25 @@ public class UserServiceImpl implements UserService {
 	@Override
 	@Transactional
 	public Optional<User> updateUser(String email, User user) throws UserNotFoundException {
-		// TODO Auto-generated method stub
 
+		// check if the user exists
 		Optional<User> existingUser = userRepository.findOneByEmail(email);
 		if (existingUser.isEmpty()) {
 			throw new UserNotFoundException(email);
 		} else {
+			// password is allowed to remain blank when updating the user
+			// in which case the existing password is obtained
 			if (user.getPassword() == null || user.getPassword().isEmpty()) {
 				user.setPassword(existingUser.get().getPassword());
 			} else {
 				user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
 			}
 
+			// save the user
 			userRepository.save(user);
-			existingUser = getUser(user.getEmail());
-			existingUser.get().setPassword(null);
-			return existingUser;
+			
+			// return the updated user (with hashed password instead of plain text)
+			return getUser(user.getEmail());
 		}
 	}
 
@@ -101,14 +106,7 @@ public class UserServiceImpl implements UserService {
 	 */
 	@Override
 	public Collection<User> getUsers() {
-
-		List<User> users = userRepository.findAll();
-
-		for (User user : users) {
-			user.setPassword(null);
-		}
-
-		return users;
+		return userRepository.findAll();
 	}
 
 	/**

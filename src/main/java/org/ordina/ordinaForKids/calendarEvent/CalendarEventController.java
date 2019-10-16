@@ -38,7 +38,8 @@ public class CalendarEventController {
 	@Autowired
 	private CalendarEventService calendarEventService;
 	
-	private ModelMapper modelMapper = new ModelMapper();
+	@Autowired
+	private ModelMapper modelMapper;
 	
 	/**
 	 * Returns the calendar events
