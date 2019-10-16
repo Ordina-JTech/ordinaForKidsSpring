@@ -84,6 +84,10 @@ public class CalendarEventController {
 	public void deleteEvent(HttpServletRequest request, @PathVariable Long id)
 	{
 		Optional<CalendarEvent> calendarEvent = calendarEventService.getCalendarEvent(id);
+		if(calendarEvent.isEmpty()) {
+			throw new ResponseStatusException(
+			          HttpStatus.FORBIDDEN, "Calendar event not found");
+		}
 		
 		// Only event owner can remove event is something which is linked to the processing of the Rest call
 		// and not necessarily a low-level limiting that should be placed on the service.

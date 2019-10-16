@@ -46,7 +46,11 @@ public class UserController {
 	{
 		Optional<User> user;
 		try {
-			user = userService.getUser(request.getUserPrincipal().getName());
+			String email = request.getUserPrincipal().getName();
+			user = userService.getUser(email);
+			if(user.isEmpty()) {
+				throw new UserNotFoundException(email);
+			}
 			return new ResponseEntity<Object>(user.get(), HttpStatus.OK);
 		} catch (UserNotFoundException e) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, e.getMessage());
@@ -85,6 +89,9 @@ public class UserController {
 		Optional<User> updatedUser;
 		try {
 			updatedUser = userService.updateUser(user.getEmail(), user);
+			if(updatedUser.isEmpty()) {
+				throw new UserNotFoundException(user.getEmail());
+			}
 		} catch (UserNotFoundException e) {
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
 		}

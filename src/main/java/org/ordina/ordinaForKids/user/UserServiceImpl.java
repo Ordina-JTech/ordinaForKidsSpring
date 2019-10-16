@@ -76,6 +76,8 @@ public class UserServiceImpl implements UserService {
 		} else {
 			// password is allowed to remain blank when updating the user
 			// in which case the existing password is obtained
+			
+			
 			if (user.getPassword() == null || user.getPassword().isEmpty()) {
 				user.setPassword(existingUser.get().getPassword());
 			} else {
@@ -94,7 +96,7 @@ public class UserServiceImpl implements UserService {
 	@Transactional
 	public void deleteUser(String email) throws UserNotFoundException {
 		if(userRepository.findOneByEmail(email).isEmpty()) {
-			throw new UsernameNotFoundException(email);
+			throw new UserNotFoundException(email);
 		}
 		calendarEventRepository.findAllByOwner(email).stream()
 				.forEach(calendarEvent -> calendarEventRepository.delete(calendarEvent));
@@ -117,9 +119,7 @@ public class UserServiceImpl implements UserService {
 	public Optional<User> getUser(String email) throws UserNotFoundException {
 		// TODO Auto-generated method stub
 		Optional<User> user = userRepository.findOneByEmail(email);
-		if (user.isPresent()) {
-			user.get().setPassword(null);
-		} else {
+		if (user.isEmpty())  {
 			if (email.equals("admin")) {
 				User _user = new User();
 				_user.setEmail("admin");
