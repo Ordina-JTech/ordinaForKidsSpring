@@ -12,4 +12,8 @@ public class UnavailabilityNotFoundException extends Exception {
 	public UnavailabilityNotFoundException(Long id) {
 		super(String.format("The requested Unavailability with ID %s was not found.", id));
 	}
+
+	public UnavailabilityNotFoundException() {
+		super("The requested Unavailability / Unavailabilities were not found");
+	}
 }

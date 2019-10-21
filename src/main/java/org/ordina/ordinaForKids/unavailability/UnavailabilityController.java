@@ -31,13 +31,21 @@ public class UnavailabilityController {
 	public List<UnavailabilityDTO> getAllUnavailabilities() {
 		Type listType = new TypeToken<List<UnavailabilityDTO>>() {
 		}.getType();
-		List<UnavailabilityDTO> unavailabilityDTOs = modelMapper.map(unavailabilityService.getAllUnavailabilities(),
-				listType);
-
+		List<Unavailability> unavailabilities = getAllUnavailabilitiesFromDB();
+		List<UnavailabilityDTO> unavailabilityDTOs = modelMapper.map(unavailabilities, listType);
 		return unavailabilityDTOs;
 	}
 
-	
+	private List<Unavailability> getAllUnavailabilitiesFromDB() {
+		List<Unavailability> unavailabilities;
+		try {
+			unavailabilities = unavailabilityService.getAllUnavailabilities();
+		} catch (UnavailabilityNotFoundException e) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No Unavailability found");
+		}
+		return unavailabilities;
+	}
+
 	@PostMapping("/unavailabilities")
 	// To do: requirements definieren in UnavailabilityDTO (anders heeft @Valid
 	// annotatie geen zin)
@@ -71,7 +79,7 @@ public class UnavailabilityController {
 		String loggedBy = unavailability.getLoggedBy();
 		if (loggedBy.equals(request.getUserPrincipal().getName())) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-					"Only user who logged unavailability can remove unavailability.");
+					"Only user who logged unavailability can modify unavailability.");
 		}
 	}
 

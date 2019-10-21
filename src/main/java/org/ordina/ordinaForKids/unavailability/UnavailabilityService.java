@@ -1,6 +1,6 @@
 package org.ordina.ordinaForKids.unavailability;
 
-import java.util.Collection;
+import java.util.List;
 
 import org.ordina.ordinaForKids.validation.UnavailabilityNotFoundException;
 import org.ordina.ordinaForKids.validation.UnavailabilityOverlapsEventException;
@@ -20,6 +20,6 @@ public interface UnavailabilityService {
 	// steeds moeten checken of de optional niet leeg is.
 	public abstract Unavailability getUnavailability(Long id) throws UnavailabilityNotFoundException;
 
-	public abstract Collection<Unavailability> getAllUnavailabilities();
+	public abstract List<Unavailability> getAllUnavailabilities() throws UnavailabilityNotFoundException;
 
 }

@@ -2,6 +2,7 @@ package org.ordina.ordinaForKids.unavailability;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import org.ordina.ordinaForKids.calendarEvent.CalendarEvent;
@@ -48,12 +49,19 @@ public class UnavailabilityServiceImpl implements UnavailabilityService {
 	@Override
 	public Unavailability getUnavailability(Long id) throws UnavailabilityNotFoundException {
 		Optional<Unavailability> unavailability = unavailabilityRepository.findById(id);
+		if (unavailability.isEmpty()) {
+			throw new UnavailabilityNotFoundException(id);
+		}
 		return unavailability.get(); 
 	}
 
 	@Override
-	public Collection<Unavailability> getAllUnavailabilities() {
-		return unavailabilityRepository.findAll();
+	public List<Unavailability> getAllUnavailabilities() throws UnavailabilityNotFoundException {
+		List<Unavailability> unavailabilities = unavailabilityRepository.findAll(); 
+		if (unavailabilities.isEmpty()) {
+			throw new UnavailabilityNotFoundException();
+		}
+		return unavailabilities;
 	}
 
 }
