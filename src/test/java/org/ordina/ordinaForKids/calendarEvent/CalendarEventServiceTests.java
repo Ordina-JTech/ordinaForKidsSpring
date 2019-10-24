@@ -5,8 +5,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.when;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -25,10 +27,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.data.domain.Sort;
-
-import static org.mockito.Mockito.*;
+import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -129,7 +129,7 @@ public class CalendarEventServiceTests {
 			throws MaximumNumberOfEventsPerDayReachedException, MaximumNumberOfEventsPerDayPerOwnerReachedException {
 		// arrange
 		CalendarEvent calendarEvent = new CalendarEvent();
-		calendarEvent.setDate(CalendarEventTestHelper.getCalendarForDay(2020, 1, 1).getTime());
+		calendarEvent.setDate(LocalDate.of(2020, 1, 1));
 		calendarEvent.setOwner("new@owner.com");
 
 		// act
@@ -146,7 +146,7 @@ public class CalendarEventServiceTests {
 		mockCalendarEvents = new ArrayList<CalendarEvent>();
 		CalendarEventTestHelper.inflateToMaxEventsPerDay(2020, 1, 1, maxEventsPerDay, mockCalendarEvents);
 		CalendarEvent calendarEvent = new CalendarEvent();
-		calendarEvent.setDate(CalendarEventTestHelper.getCalendarForDay(2020, 1, 1).getTime());
+		calendarEvent.setDate(LocalDate.of(2020, 1, 1));
 		calendarEvent.setOwner("new@owner.com");
 
 		// act
@@ -164,7 +164,7 @@ public class CalendarEventServiceTests {
 		String owner = "new@owner.com";
 		CalendarEventTestHelper.inflateToMaxEventsPerDayPerOwner(2020, 2, 1, maxEventsPerDayPerOwner, owner, mockCalendarEvents);
 		CalendarEvent calendarEvent = new CalendarEvent();
-		calendarEvent.setDate(CalendarEventTestHelper.getCalendarForDay(2020, 2, 1).getTime());
+		calendarEvent.setDate(LocalDate.of(2020, 2, 1));
 		calendarEvent.setOwner("new@owner.com");
 
 		// act
@@ -183,17 +183,17 @@ public class CalendarEventServiceTests {
 	}
 
 	private void setStubForFindAllByDate() {
-		when(calendarEventRepository.findAllByDate(any(Date.class))).thenAnswer(invocation -> {
-			Date compareToDate = invocation.getArgument(0);
+		when(calendarEventRepository.findAllByDate(any(LocalDate.class))).thenAnswer(invocation -> {
+			LocalDate compareToDate = invocation.getArgument(0);
 			return mockCalendarEvents.stream().filter(event -> event.getDate().compareTo(compareToDate) == 0)
 					.collect(Collectors.toList());
 		});
 	}
 
 	private void setStubForFindAllByDateAndOwner() {
-		when(calendarEventRepository.findAllByDateAndOwner(any(Date.class), any(String.class)))
+		when(calendarEventRepository.findAllByDateAndOwner(any(LocalDate.class), any(String.class)))
 				.thenAnswer(invocation -> {
-					Date compareToDate = invocation.getArgument(0);
+					LocalDate compareToDate = invocation.getArgument(0);
 					String owner = invocation.getArgument(1);
 					return mockCalendarEvents.stream().filter(
 							event -> event.getDate().compareTo(compareToDate) == 0 && event.getOwner().equals(owner))

@@ -1,6 +1,6 @@
 package org.ordina.ordinaForKids.calendarEvent;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 /**
  * Data Transfer Object for CalendarEvent
@@ -10,7 +10,7 @@ import java.util.Date;
  */
 public class CalendarEventDTO {
 	private long id;
-	private Date date;
+	private LocalDate date;
 	private String owner;
 	
 	/**
@@ -28,13 +28,13 @@ public class CalendarEventDTO {
 	/**
 	 * @return the date
 	 */
-	public Date getDate() {
+	public LocalDate getDate() {
 		return date;
 	}
 	/**
 	 * @param date the date to set
 	 */
-	public void setDate(Date date) {
+	public void setDate(LocalDate date) {
 		this.date = date;
 	}
 	/**
