@@ -1,6 +1,6 @@
 package org.ordina.ordinaForKids.unavailability;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 import org.ordina.ordinaForKids.teachingModule.TeachingModules;
 
@@ -9,7 +9,7 @@ public class UnavailabilityDTO {
 
 	private long id;
 	// voorstel validatie: moet op of na vandaag zijn. Geen zaterdag of zondag.
-	private Date date;
+	private LocalDate date;
 	// voorstel validatie: moet gebruiker zijn van het type Ordina of Administrator
 	private String loggedBy;
 	private TeachingModules unavailableModule;
@@ -23,11 +23,11 @@ public class UnavailabilityDTO {
 		this.id = id;
 	}
 
-	public Date getDate() {
+	public LocalDate getDate() {
 		return date;
 	}
 
-	public void setDate(Date date) {
+	public void setDate(LocalDate date) {
 		this.date = date;
 	}
 

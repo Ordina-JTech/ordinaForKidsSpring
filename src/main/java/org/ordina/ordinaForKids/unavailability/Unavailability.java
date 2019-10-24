@@ -1,29 +1,24 @@
 package org.ordina.ordinaForKids.unavailability;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EntityListeners;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
 import org.ordina.ordinaForKids.teachingModule.TeachingModules;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-// Tim: ik weet niet wat @EntityListeners is, maar aangezien het in de CalenderEvent klasse staat heb ik het overgenomen.
-@EntityListeners(AuditingEntityListener.class)
 public class Unavailability {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	private long id;
 
-	// Tim: laten we nog even kijken of we niet beter LocalDate kunnen gebruiken.
 	@Column(name = "date", nullable = false)
-	private Date date;
+	private LocalDate date;
 	@Column(name = "logged_by", nullable = false)
 	// Tim: hoezo kunnen we eigenlijk niet met de entity User werken, maar gebruiken
 	// we string?
@@ -46,11 +41,11 @@ public class Unavailability {
 		this.id = id;
 	}
 
-	public Date getDate() {
+	public LocalDate getDate() {
 		return date;
 	}
 
-	public void setDate(Date date) {
+	public void setDate(LocalDate date) {
 		this.date = date;
 	}
 

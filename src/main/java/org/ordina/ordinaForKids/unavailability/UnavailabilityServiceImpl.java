@@ -1,7 +1,7 @@
 package org.ordina.ordinaForKids.unavailability;
 
+import java.time.LocalDate;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,11 +30,11 @@ public class UnavailabilityServiceImpl implements UnavailabilityService {
 	}
 
 	private void checkEventOverlap(Unavailability unavailability) throws UnavailabilityOverlapsEventException {
-		Date unavailabilityDate = unavailability.getDate();
+		LocalDate unavailabilityDate = unavailability.getDate();
 		Collection<CalendarEvent> eventsInDatabase = calendarEventServiceImpl.getCalendarEvents();
 		for (CalendarEvent calendarEvent : eventsInDatabase) {
-			Date calendarEventDate = calendarEvent.getDate();
-			if (calendarEventDate.compareTo(unavailabilityDate) == 0) {
+			LocalDate calendarEventDate = calendarEvent.getDate();
+			if (calendarEventDate.equals(unavailabilityDate)) {
 				throw new UnavailabilityOverlapsEventException(unavailabilityDate);
 			}
 		}
