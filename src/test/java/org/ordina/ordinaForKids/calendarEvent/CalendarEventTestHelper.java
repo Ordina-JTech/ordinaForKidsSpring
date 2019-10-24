@@ -1,8 +1,8 @@
 package org.ordina.ordinaForKids.calendarEvent;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.List;
 
 public class CalendarEventTestHelper {
@@ -13,7 +13,7 @@ public class CalendarEventTestHelper {
 		List<CalendarEvent> mockCalendarEvents = new ArrayList<CalendarEvent>();
 		for (int i = 0; i < mockCalendarEventSize; i++) {
 			CalendarEvent calendarEvent = new CalendarEvent();
-			calendarEvent.setDate(getCalendarForDay(2019, 10, i + 1).getTime());
+			calendarEvent.setDate(LocalDate.of(2019, 10, i + 1));
 			calendarEvent.setOwner("demo@user.com");
 			calendarEvent.setId(getNewCalendarEventId());
 			mockCalendarEvents.add(calendarEvent);
@@ -37,7 +37,7 @@ public class CalendarEventTestHelper {
 	public static void inflateToMaxEventsPerDay(int year, int month, int day, long maxEventsPerDay, List<CalendarEvent> mockCalendarEvents) {
 		for (int i = 0; i < maxEventsPerDay; i++) {
 			CalendarEvent calendarEvent = new CalendarEvent();
-			calendarEvent.setDate(CalendarEventTestHelper.getCalendarForDay(year, month, day).getTime());
+			calendarEvent.setDate(LocalDate.of(year, month, day));
 			calendarEvent.setOwner("demo" + i + "@user.com");
 			calendarEvent.setId(mockCalendarEvents.size());
 			mockCalendarEvents.add(calendarEvent);
@@ -50,7 +50,7 @@ public class CalendarEventTestHelper {
 	public static void inflateToMaxEventsPerDayPerOwner(int year, int month, int day, long maxEventsPerDayPerOwner, String owner, List<CalendarEvent> mockCalendarEvents) {
 		for (int i = 0; i < maxEventsPerDayPerOwner; i++) {
 			CalendarEvent calendarEvent = new CalendarEvent();
-			calendarEvent.setDate(CalendarEventTestHelper.getCalendarForDay(year, month, day).getTime());
+			calendarEvent.setDate(LocalDate.of(year, month, day));
 			calendarEvent.setOwner(owner);
 			calendarEvent.setId(mockCalendarEvents.size());
 			mockCalendarEvents.add(calendarEvent);

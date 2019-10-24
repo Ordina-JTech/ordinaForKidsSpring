@@ -2,14 +2,17 @@ package org.ordina.ordinaForKids.calendarEvent;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Calendar;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,8 +40,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import static org.mockito.Mockito.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -111,7 +112,7 @@ public class CalendarEventControllerTests {
 	public void testCreateEventShouldThrowMaximumEventsPerUserPerDayException() throws Exception {
 		// > arrange
 		CalendarEvent newCalendarEvent = new CalendarEvent();
-		newCalendarEvent.setDate(CalendarEventTestHelper.getCalendarForDay(2019, 10, 1).getTime()); // <- mock repository already has event on this day for this user
+		newCalendarEvent.setDate(LocalDate.of(2019, 10, 1)); // <- mock repository already has event on this day for this user
 		newCalendarEvent.setOwner("demo@user.com");
 		
 		// > act
@@ -132,7 +133,7 @@ public class CalendarEventControllerTests {
 		
 		// create a new event for the same date with a unique user:
 		CalendarEvent newCalendarEvent = new CalendarEvent();
-		newCalendarEvent.setDate(CalendarEventTestHelper.getCalendarForDay(2019, 12, 1).getTime());
+		newCalendarEvent.setDate(LocalDate.of(2019, 12, 1));
 		newCalendarEvent.setOwner("second@user.com");
 		
 		// > act
@@ -150,7 +151,7 @@ public class CalendarEventControllerTests {
 	public void testCreateEventShouldPass() throws Exception {
 		// > arrange
 		CalendarEvent newCalendarEvent = new CalendarEvent();
-		newCalendarEvent.setDate(CalendarEventTestHelper.getCalendarForDay(2020, 1, 1).getTime()); 
+		newCalendarEvent.setDate(LocalDate.of(2020, 1, 1)); 
 		newCalendarEvent.setOwner("demo@user.com");
 		
 		// > act

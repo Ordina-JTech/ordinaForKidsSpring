@@ -1,6 +1,6 @@
 package org.ordina.ordinaForKids.calendarEvent;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -25,7 +25,7 @@ public class CalendarEvent {
     private long id;
 	
 	@Column(name = "date", nullable = false)
-    private Date date;
+    private LocalDate date;
     @Column(name = "owner", nullable = false)
     private String owner;
     
@@ -58,14 +58,14 @@ public class CalendarEvent {
 	/**
 	 * @return the start
 	 */
-	public Date getDate() {
+	public LocalDate getDate() {
 		return date;
 	}
 
 	/**
 	 * @param start the start to set
 	 */
-	public void setDate(Date start) {
+	public void setDate(LocalDate start) {
 		this.date = start;
 	}
 

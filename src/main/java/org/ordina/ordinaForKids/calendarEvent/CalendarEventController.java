@@ -9,15 +9,10 @@ import javax.validation.Valid;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
-import org.ordina.ordinaForKids.validation.CalendarEventAccessViolationException;
 import org.ordina.ordinaForKids.validation.CalendarEventNotFoundException;
 import org.ordina.ordinaForKids.validation.MaximumNumberOfEventsPerDayPerOwnerReachedException;
 import org.ordina.ordinaForKids.validation.MaximumNumberOfEventsPerDayReachedException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.ExampleMatcher;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
