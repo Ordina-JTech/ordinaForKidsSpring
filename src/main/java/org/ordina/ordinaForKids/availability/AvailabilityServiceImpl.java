@@ -24,7 +24,8 @@ public class AvailabilityServiceImpl implements AvailabilityService {
 
 	@Override
 	@Transactional
-	public void createAvailability(Availability availability) throws AvailabilityOverlapsEventException, IllegalArgumentException {
+	public void createAvailability(Availability availability)
+			throws AvailabilityOverlapsEventException, IllegalArgumentException {
 		checkEventOverlap(availability);
 		if (isInRepository(availability)) {
 			throw new IllegalArgumentException();

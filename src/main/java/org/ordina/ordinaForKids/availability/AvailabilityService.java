@@ -7,8 +7,7 @@ import org.ordina.ordinaForKids.validation.AvailabilityOverlapsEventException;
 
 public interface AvailabilityService {
 
-	public abstract void createAvailability(Availability availability)
-			throws AvailabilityOverlapsEventException;
+	public abstract void createAvailability(Availability availability) throws AvailabilityOverlapsEventException;
 
 	public abstract void deleteAvailability(Availability availability) throws AvailabilityNotFoundException;
 

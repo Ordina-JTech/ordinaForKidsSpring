@@ -41,7 +41,7 @@ public class AvailabilityController {
 		try {
 			availabilities = availabilityService.getAllAvailabilities();
 		} catch (AvailabilityNotFoundException e) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No availability found");
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No availability found");
 		}
 		return availabilities;
 	}
@@ -49,7 +49,6 @@ public class AvailabilityController {
 	@PostMapping("/availabilities")
 	// To do: requirements definieren in AvailabilityDTO (anders heeft @Valid
 	// annotatie geen zin)
-	// Tim: wat is eigenlijk de reden dat de DTO weer teruggegeven wordt?
 	public AvailabilityDTO createAvailability(@Valid @RequestBody AvailabilityDTO availabilityDTO,
 			HttpServletRequest request) {
 		Availability availability = modelMapper.map(availabilityDTO, Availability.class);
@@ -70,7 +69,7 @@ public class AvailabilityController {
 			checkAuthorization(availability, request);
 			availabilityService.deleteAvailability(availability);
 		} catch (AvailabilityNotFoundException e) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Availability not found");
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Availability not found");
 		}
 
 	}

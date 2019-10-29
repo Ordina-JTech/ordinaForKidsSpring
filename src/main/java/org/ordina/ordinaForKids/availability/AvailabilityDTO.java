@@ -2,7 +2,7 @@ package org.ordina.ordinaForKids.availability;
 
 import java.time.LocalDate;
 
-import org.ordina.ordinaForKids.teachingModule.TeachingModules;
+import org.ordina.ordinaForKids.teachingModule.TeachingModule;
 
 // We moeten hier de validaties definieren die aangeroepen worden in de Controller
 public class AvailabilityDTO {
@@ -12,8 +12,7 @@ public class AvailabilityDTO {
 	private LocalDate date;
 	// voorstel validatie: moet gebruiker zijn van het type Ordina of Administrator
 	private String loggedBy;
-	private TeachingModules availableModule;
-	private String reason;
+	private TeachingModule availableModule;
 
 	public long getId() {
 		return id;
@@ -39,20 +38,13 @@ public class AvailabilityDTO {
 		this.loggedBy = loggedBy;
 	}
 
-	public TeachingModules getAvailableModule() {
+	public TeachingModule getAvailableModule() {
 		return availableModule;
 	}
 
-	public void setAvailableModule(TeachingModules availableModule) {
+	public void setAvailableModule(TeachingModule availableModule) {
 		this.availableModule = availableModule;
 	}
 
-	public String getReason() {
-		return reason;
-	}
-
-	public void setReason(String reason) {
-		this.reason = reason;
-	}
-
+	
 }

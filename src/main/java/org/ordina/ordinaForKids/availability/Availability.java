@@ -8,7 +8,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
-import org.ordina.ordinaForKids.teachingModule.TeachingModules;
+import org.ordina.ordinaForKids.teachingModule.TeachingModule;
 
 @Entity
 public class Availability {
@@ -29,11 +29,13 @@ public class Availability {
 	// workshops. Als we het type workshop hier specificeren hoeft de availability
 	// niet meteen voor alle workshops te gelden.
 	@Column(name = "available_module", nullable = false)
-	private TeachingModules availableModule;
-	@Column(name = "reason", nullable = true)
-	private String reason;
+	private TeachingModule availableModule;
+
 
 	
+	/**
+	 * Standard implementation, overridden in accordance with equals method. 
+	 */
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -42,6 +44,9 @@ public class Availability {
 		return result;
 	}
 
+	/**
+	 * Standard equals method implementation, where availabilities with equal ID are equal.
+	 */
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -80,20 +85,12 @@ public class Availability {
 		this.loggedBy = loggedBy;
 	}
 
-	public TeachingModules getAvailableModule() {
+	public TeachingModule getAvailableModule() {
 		return availableModule;
 	}
 
-	public void setAvailableModule(TeachingModules availableModule) {
+	public void setAvailableModule(TeachingModule availableModule) {
 		this.availableModule = availableModule;
-	}
-
-	public String getReason() {
-		return reason;
-	}
-
-	public void setReason(String reason) {
-		this.reason = reason;
 	}
 
 }

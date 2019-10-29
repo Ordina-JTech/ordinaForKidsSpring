@@ -1,5 +1,5 @@
 package org.ordina.ordinaForKids.teachingModule;
 
-public enum TeachingModules {
+public enum TeachingModule {
 	PROGRAMMING, AGILE, SOCIAL_SECURITY
 }
