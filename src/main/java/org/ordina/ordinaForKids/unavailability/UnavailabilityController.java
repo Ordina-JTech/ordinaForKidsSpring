@@ -67,11 +67,11 @@ public class UnavailabilityController {
 		Unavailability unavailability;
 		try {
 			unavailability = unavailabilityService.getUnavailability(id);
+			checkAuthorization(unavailability, request);
+			unavailabilityService.deleteUnavailability(unavailability);
 		} catch (UnavailabilityNotFoundException e) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Unavailability not found");
 		}
-		checkAuthorization(unavailability, request);
-		unavailabilityService.deleteUnavailability(unavailability);
 
 	}
 
