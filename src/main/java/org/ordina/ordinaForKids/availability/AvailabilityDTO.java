@@ -1,18 +1,18 @@
-package org.ordina.ordinaForKids.unavailability;
+package org.ordina.ordinaForKids.availability;
 
 import java.time.LocalDate;
 
 import org.ordina.ordinaForKids.teachingModule.TeachingModules;
 
 // We moeten hier de validaties definieren die aangeroepen worden in de Controller
-public class UnavailabilityDTO {
+public class AvailabilityDTO {
 
 	private long id;
 	// voorstel validatie: moet op of na vandaag zijn. Geen zaterdag of zondag.
 	private LocalDate date;
 	// voorstel validatie: moet gebruiker zijn van het type Ordina of Administrator
 	private String loggedBy;
-	private TeachingModules unavailableModule;
+	private TeachingModules availableModule;
 	private String reason;
 
 	public long getId() {
@@ -39,12 +39,12 @@ public class UnavailabilityDTO {
 		this.loggedBy = loggedBy;
 	}
 
-	public TeachingModules getUnavailableModule() {
-		return unavailableModule;
+	public TeachingModules getAvailableModule() {
+		return availableModule;
 	}
 
-	public void setUnavailableModule(TeachingModules unavailableModule) {
-		this.unavailableModule = unavailableModule;
+	public void setAvailableModule(TeachingModules availableModule) {
+		this.availableModule = availableModule;
 	}
 
 	public String getReason() {

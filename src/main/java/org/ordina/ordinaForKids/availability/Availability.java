@@ -1,4 +1,4 @@
-package org.ordina.ordinaForKids.unavailability;
+package org.ordina.ordinaForKids.availability;
 
 import java.time.LocalDate;
 
@@ -11,7 +11,7 @@ import javax.persistence.Id;
 import org.ordina.ordinaForKids.teachingModule.TeachingModules;
 
 @Entity
-public class Unavailability {
+public class Availability {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -26,10 +26,10 @@ public class Unavailability {
 	// Tim: dit moeten we nog even bekijken of het nodig is vanuit de business, maar
 	// zoals ik het een beetje begreep uit de meeting vorige week kan het zo zijn
 	// dat verschillende teams verantwoordelijk zijn voor verschillende typen
-	// workshops. Als we het type workshop hier specificeren hoeft de unavailability
+	// workshops. Als we het type workshop hier specificeren hoeft de availability
 	// niet meteen voor alle workshops te gelden.
-	@Column(name = "unavailable_module", nullable = false)
-	private TeachingModules unavailableModule;
+	@Column(name = "available_module", nullable = false)
+	private TeachingModules availableModule;
 	@Column(name = "reason", nullable = true)
 	private String reason;
 
@@ -50,7 +50,7 @@ public class Unavailability {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		Unavailability other = (Unavailability) obj;
+		Availability other = (Availability) obj;
 		if (id != other.id)
 			return false;
 		return true;
@@ -80,12 +80,12 @@ public class Unavailability {
 		this.loggedBy = loggedBy;
 	}
 
-	public TeachingModules getUnavailableModule() {
-		return unavailableModule;
+	public TeachingModules getAvailableModule() {
+		return availableModule;
 	}
 
-	public void setUnavailableModule(TeachingModules unavailableModule) {
-		this.unavailableModule = unavailableModule;
+	public void setAvailableModule(TeachingModules availableModule) {
+		this.availableModule = availableModule;
 	}
 
 	public String getReason() {
