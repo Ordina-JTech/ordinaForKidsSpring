@@ -45,7 +45,7 @@ public class Availability {
 	}
 
 	/**
-	 * Standard equals method implementation, where availabilities with equal ID are equal.
+	 * Standard equals method implementation, where Availabilities with equal ID are equal.
 	 */
 	@Override
 	public boolean equals(Object obj) {

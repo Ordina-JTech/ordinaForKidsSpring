@@ -27,7 +27,7 @@ public class AvailabilityController {
 	@Autowired
 	private ModelMapper modelMapper;
 
-	@GetMapping("/availabilities")
+	@GetMapping("/availability")
 	public List<AvailabilityDTO> getAllAvailabilities() {
 		Type listType = new TypeToken<List<AvailabilityDTO>>() {
 		}.getType();
@@ -46,7 +46,7 @@ public class AvailabilityController {
 		return availabilities;
 	}
 
-	@PostMapping("/availabilities")
+	@PostMapping("/availability")
 	// To do: requirements definieren in AvailabilityDTO (anders heeft @Valid
 	// annotatie geen zin)
 	public AvailabilityDTO createAvailability(@Valid @RequestBody AvailabilityDTO availabilityDTO,
@@ -61,7 +61,7 @@ public class AvailabilityController {
 		return availabilityDTO;
 	}
 
-	@DeleteMapping("/availabilities/{id}")
+	@DeleteMapping("/availability/{id}")
 	public void deleteAvailability(HttpServletRequest request, @PathVariable Long id) {
 		Availability availability;
 		try {
